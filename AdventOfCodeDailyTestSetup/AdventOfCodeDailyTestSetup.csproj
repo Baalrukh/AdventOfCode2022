@@ -15,4 +15,15 @@
       <PackageReference Include="TextCopy" Version="6.2.0" />
     </ItemGroup>
 
+    <ItemGroup>
+      <None Remove="ExerciseTemplate.txt" />
+      <Content Include="ExerciseTemplate.txt">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+      <None Remove="TestTemplate.txt" />
+      <Content Include="TestTemplate.txt">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+    </ItemGroup>
+
 </Project>

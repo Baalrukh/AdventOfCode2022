@@ -1,8 +1,7 @@
-namespace AdventOfCode2022
+namespace AdventOfCode2022;
+
+public interface Exercise
 {
-    public interface Exercise
-    {
-        long ExecutePart1(string[] lines);
-        long ExecutePart2(string[] lines);
-    }
+    long ExecutePart1(string[] lines);
+    long ExecutePart2(string[] lines);
 }
