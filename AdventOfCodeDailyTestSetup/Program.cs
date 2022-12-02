@@ -40,7 +40,7 @@ internal class Program
     private static void CopyTemplate(string templateFile, int day, string exerciseClassPath)
     {
         string[] exerciseLines = File.ReadAllLines(templateFile)
-            .Select(x => x.Replace("{day}", day.ToString()))
+            .Select(x => x.Replace("{day}", day.ToString("00")))
             .ToArray();
         File.WriteAllLines(exerciseClassPath, exerciseLines);
     }
