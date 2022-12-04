@@ -17,6 +17,16 @@ namespace AdventOfCode2022.Utils {
             return (Start <= value) && (value <= End);
         }
 
+        public bool Intersects(Interval other)
+        {
+            return (other.Start <= End) && (other.End >= Start);
+        }
+
+        public bool IsInside(Interval other)
+        {
+            return (other.Start >= Start) && (other.End <= End);
+        }
+
         public override string ToString()
         {
             return $"[{Start}/{End}]";
