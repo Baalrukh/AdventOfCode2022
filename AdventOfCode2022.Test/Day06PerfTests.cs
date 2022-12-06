@@ -86,6 +86,7 @@ public class Day06PerfTests
     private static string GenerateTestString(int patternLength, int testStringLength)
     {
         var textPattern = Enumerable.Range(0, patternLength - 1).Aggregate("", (s, i) => s + (char) (i + 'a'));
+        textPattern += textPattern[patternLength - 2];
         StringBuilder builder = new StringBuilder();
         while (builder.Length < testStringLength)
         {
