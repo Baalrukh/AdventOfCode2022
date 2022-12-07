@@ -73,4 +73,35 @@ public static class EnumerableUtils
 
         return -1;
     }
+
+    public static IEnumerable<List<string>> Batch(this IEnumerable<string> lines, Predicate<string> splitCriteria, bool skipSplitLine = false)
+    {
+        List<string> batch = new List<string>();
+
+        foreach (var line in lines)
+        {
+            if (splitCriteria(line))
+            {
+                if (batch.Count > 0)
+                {
+                    yield return batch;
+                }
+
+                batch = new List<string>();
+                if (!skipSplitLine)
+                {
+                    batch.Add(line);
+                }
+            }
+            else
+            {
+                batch.Add(line);
+            }
+        }
+
+        if (batch.Count > 0)
+        {
+            yield return batch;
+        }
+    }
 }
