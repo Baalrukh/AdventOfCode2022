@@ -108,5 +108,13 @@ namespace AdventOfCode2022.Utils {
 
             return new Map2D<T>(map, width, height);
         }
+
+        public bool IsInside(IntVector2 position)
+        {
+            return (position.X >= 0)
+                   && (position.X < Width)
+                   && (position.Y >= 0)
+                   && (position.Y < Height);
+        }
     }
 }
