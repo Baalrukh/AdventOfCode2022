@@ -43,35 +43,35 @@ public class Day11Tests
     [Test]
     public void TestParseMonkey()
     {
-        Assert.AreEqual(new Day11.Monkey(new [] {79, 98}, new Day11.MultiplyIntOperation(19), 23, 2, 3), Day11.ParseMonkey(_sampleLines.Take(6).ToArray()));
+        Assert.AreEqual(new Day11.Monkey(new [] {79L, 98}, new Day11.MultiplyIntOperation(19), 23, 2, 3), Day11.MonkeyGroup.ParseMonkey(_sampleLines.Take(6).ToArray()));
     }
 
     [Test]
     public void TestParseMathOperation_Add()
     {
-        Assert.AreEqual(new Day11.AddIntOperation(25), Day11.ParseIntMathOperation("  Operation: new = old + 25"));
+        Assert.AreEqual(new Day11.AddIntOperation(25), Day11.MonkeyGroup.ParseIntMathOperation("  Operation: new = old + 25"));
     }
 
     [Test]
     public void TestParseMathOperation_Multiply()
     {
-        Assert.AreEqual(new Day11.MultiplyIntOperation(24), Day11.ParseIntMathOperation("  Operation: new = old * 24"));
+        Assert.AreEqual(new Day11.MultiplyIntOperation(24), Day11.MonkeyGroup.ParseIntMathOperation("  Operation: new = old * 24"));
     }
 
     [Test]
     public void TestParseMathOperation_Square()
     {
-        Assert.AreEqual(Day11.SquareIntOperationInstance, Day11.ParseIntMathOperation("  Operation: new = old * old"));
+        Assert.AreEqual(Day11.SquareIntOperationInstance, Day11.MonkeyGroup.ParseIntMathOperation("  Operation: new = old * old"));
     }
 
     [Test]
     public void TestExecuteMonkeyStep()
     {
-        Day11.Monkey monkey0 = new Day11.Monkey(new[] { 79, 98 }, new Day11.MultiplyIntOperation(19), 23, 2, 3);
-        Day11.Monkey monkey3 = new Day11.Monkey(new[] { 25 }, new Day11.MultiplyIntOperation(1), 1, 1, 1);
+        Day11.Monkey monkey0 = new Day11.Monkey(new[] { 79L, 98 }, new Day11.MultiplyIntOperation(19), 23, 2, 3);
+        Day11.Monkey monkey3 = new Day11.Monkey(new[] { 25L }, new Day11.MultiplyIntOperation(1), 1, 1, 1);
 
         var monkeys = new[] { monkey0, null, null, monkey3 };
-        monkey0.ExecuteStep(monkeys!);
+        monkey0.ExecuteStep(monkeys!, Day11.MonkeyGroup.Part1WorryLevelAdjustment);
 
         CollectionAssert.AreEqual(new [] {98}, monkey0.ItemWorries);
         CollectionAssert.AreEqual(new [] {25, 500}, monkey3.ItemWorries);
@@ -82,8 +82,8 @@ public class Day11Tests
     [Test]
     public void TestExecuteRound()
     {
-        Day11.Monkey[] monkeys = Day11.ParseMonkeys(_sampleLines);
-        Day11.ExecuteRound(monkeys);
+        Day11.MonkeyGroup monkeys = Day11.MonkeyGroup.ParseMonkeys(_sampleLines, Day11.MonkeyGroup.Part1WorryLevelAdjustment);
+        monkeys.ExecuteRound();
         CollectionAssert.AreEqual(new [] {20, 23, 27, 26}, monkeys[0].ItemWorries);
         CollectionAssert.AreEqual(new [] {2080, 25, 167, 207, 401, 1046}, monkeys[1].ItemWorries);
         CollectionAssert.IsEmpty(monkeys[2].ItemWorries);
@@ -93,6 +93,6 @@ public class Day11Tests
     [Test]
     public void TestPart2()
     {
-        Assert.AreEqual(-20, new Day11().ExecutePart2(_sampleLines));
+        Assert.AreEqual(2713310158, new Day11().ExecutePart2(_sampleLines));
     }
 }
