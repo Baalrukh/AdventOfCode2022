@@ -15,7 +15,7 @@ internal class Program
         var lines = File.ReadAllLines($"Input/day{currentDay:00}.txt");
 
         var exerciseType = referenceType.Assembly.GetType($"{referenceType.Namespace}.Day{currentDay:00}");
-        var exercise = (Exercise)Activator.CreateInstance(exerciseType);
+        var exercise = (Exercise)Activator.CreateInstance(exerciseType!)!;
 
         var result = exercise.ExecutePart1(lines);
         Console.WriteLine($"Executed in {stopwatch.ElapsedMilliseconds}ms");
