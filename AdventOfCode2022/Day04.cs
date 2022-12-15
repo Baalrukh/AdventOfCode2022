@@ -23,7 +23,7 @@ public class Day04 : Exercise
     private Interval ParseInterval(string intervalStr)
     {
         string[] tokens = intervalStr.Split('-');
-        return new Interval(int.Parse(tokens[0]), int.Parse(tokens[1]));
+        return Interval.FromToIncluded(int.Parse(tokens[0]), int.Parse(tokens[1]));
     }
 
     public long ExecutePart2(string[] lines)
