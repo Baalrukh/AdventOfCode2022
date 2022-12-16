@@ -32,6 +32,7 @@ public class Day16Tests
     [Test]
     public void TestParseValve()
     {
-        Assert.AreEqual(new Day16.Valve("BB", 13, new[] {2, 0}), Day16.Parse(_sampleLines[1]));
+        Assert.AreEqual(new Day16.Valve("BB", 13, new[] {"CC", "AA"}), Day16.Parse(_sampleLines[1]));
+        Assert.AreEqual(new Day16.Valve("JJ", 21, new[] {"II"}), Day16.Parse(_sampleLines[^1]));
     }
 }
