@@ -58,4 +58,24 @@ public class EnumerableUtilsTest
             new [] {"$ a"}, new[] {"$ b", ""}, new []{"$ c"}
         }, new[] {"$ a", "$ b", "", "$ c"}.Batch(x => x.StartsWith('$'),false));
     }
+
+    [Test]
+    public void TestLoopingEnumerator()
+    {
+        int[] values = { 1, 2, 3 };
+        var loopingEnumerable = new LoopingEnumerator<int>(values);
+        
+        int GetNext(LoopingEnumerator<int> enumerator)
+        {
+            enumerator.MoveNext();
+            return enumerator.Current;
+        }
+        Assert.AreEqual(1, GetNext(loopingEnumerable));
+        Assert.AreEqual(2, GetNext(loopingEnumerable));
+        Assert.AreEqual(3, GetNext(loopingEnumerable));
+        Assert.AreEqual(1, GetNext(loopingEnumerable));
+        Assert.AreEqual(2, GetNext(loopingEnumerable));
+        Assert.AreEqual(3, GetNext(loopingEnumerable));
+        Assert.AreEqual(1, GetNext(loopingEnumerable));
+    }
 }
