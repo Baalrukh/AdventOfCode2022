@@ -29,9 +29,16 @@ public class Day19Tests
     }
 
     [Test]
-    public void TestGetCollectedGeodeCount()
+    public void TestGetCollectedGeodeCount1()
     {
         var blueprint = Day19.ParseBlueprint(_sampleLines[0]);
         Assert.AreEqual(9, blueprint.GetCollectedGeodeCount(24));
+    }
+
+    [Test]
+    public void TestGetCollectedGeodeCount2()
+    {
+        var blueprint = Day19.ParseBlueprint(_sampleLines[1]);
+        Assert.AreEqual(12, blueprint.GetCollectedGeodeCount(24));
     }
 }
