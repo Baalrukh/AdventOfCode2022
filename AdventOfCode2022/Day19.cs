@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Diagnostics;
 using System.Text.RegularExpressions;
 
 namespace AdventOfCode2022;
@@ -13,11 +14,13 @@ public class Day19 : Exercise
     private static readonly Regex BlueprintPattern = new (
         "Blueprint (\\d+): Each ore robot costs (\\d+) ore. Each clay robot costs (\\d+) ore. Each obsidian robot costs (\\d+) ore and (\\d+) clay. Each geode robot costs (\\d+) ore and (\\d+) obsidian.");
 
+
+    // 1327 too low
     public long ExecutePart1(string[] lines)
     {
         var list = lines.Select(ParseBlueprint).Select(x => x.GetCollectedGeodeCount(24)).ToList();
-
-        return list.Select((x, i) => x * i).Sum();
+        Console.WriteLine(string.Join("\n", list));
+        return list.Select((x, i) => x * (i + 1)).Sum();
     }
 
     public long ExecutePart2(string[] lines)
@@ -60,11 +63,11 @@ public class Day19 : Exercise
             return false;
         }
 
-        public bool WillBeAccessible(IReadOnlyList<int> machineCounts)
+        public bool WillBeAccessible(IReadOnlyList<int> machineCounts, int remainingTime)
         {
-            return ((Ore == 0) || (machineCounts[OreIndex] > 0))
-                   && ((Clay == 0) || (machineCounts[ClayIndex] > 0))
-                   && ((Obsidian == 0) || (machineCounts[ObsidianIndex] > 0));
+            return ((Ore == 0) || (machineCounts[OreIndex] * remainingTime >= Ore))
+                   && ((Clay == 0) || (machineCounts[ClayIndex] * remainingTime >= Clay))
+                   && ((Obsidian == 0) || (machineCounts[ObsidianIndex] * remainingTime >= Obsidian));
         }
     }
 
@@ -79,19 +82,26 @@ public class Day19 : Exercise
 
             machineCounts[OreIndex] = 1;
 
-            return TryBuyNextMachine(time, machineCounts, inventory);
+            List<string> actions = new();
+            return TryBuyNextMachine(time, machineCounts, inventory, actions);
         }
 
-        private int TryBuyNextMachine(int time, IReadOnlyList<int> machineCounts, IReadOnlyList<int> inventory)
+        private int TryBuyNextMachine(int time, IReadOnlyList<int> machineCounts, IReadOnlyList<int> inventory, List<string> actions)
         {
             int maxGeodeCount = 0;
-            foreach (var nextMachineToBuyIndex in EnumerateAccessibleMachines(machineCounts))
+            bool first = true;
+            foreach (var nextMachineToBuyIndex in EnumerateAccessibleMachines(machineCounts, time))
             {
+                if (!first)
+                {
+                    LogDebug($"Backtrack to {time}");
+                }
+                first = false;
                 var currentInventory = new List<int>(inventory);
                 var currentMachineCounts = new List<int>(machineCounts);
 
                 int geodeCount =
-                    GetCollectedGeodeCountWithNextMachine(nextMachineToBuyIndex, time, currentInventory, currentMachineCounts);
+                    GetCollectedGeodeCountWithNextMachine(nextMachineToBuyIndex, time, currentInventory, currentMachineCounts, new List<string>(actions));
                 if (maxGeodeCount < geodeCount)
                 {
                     maxGeodeCount = geodeCount;
@@ -101,31 +111,59 @@ public class Day19 : Exercise
             return maxGeodeCount;
         }
 
-        private int GetCollectedGeodeCountWithNextMachine(int nextMachineToBuyIndex, int time, List<int> inventory, List<int> machineCounts)
+        private int GetCollectedGeodeCountWithNextMachine(int nextMachineToBuyIndex, int time, List<int> inventory, List<int> machineCounts,
+            List<string> actions)
         {
             Cost machineCost = MachineCosts[nextMachineToBuyIndex];
             while (time > 0)
             {
+                if (time == MachineCosts[GeodeIndex].Obsidian)
+                {
+                    if (inventory[ObsidianIndex] + machineCounts[ObsidianIndex] * time < MachineCosts[GeodeIndex].Obsidian)
+                    {
+                        LogDebug("Early break, won't have enough obsidian");
+                        return 0;
+                    }
+
+                }
                 bool machineBought = machineCost.TrySpend(inventory);
                 ExtractResources(machineCounts, inventory);
 
                 time--;
-                
+
                 if (machineBought && (time > 0))
                 {
+                    if (LogEnabled)
+                    {
+                        actions.Add($"Bought Machine {nextMachineToBuyIndex} at {time}");
+                        actions.Add($"Resources at {time}: [{string.Join(",", inventory)}]");
+                    }
+
                     machineCounts[nextMachineToBuyIndex]++;
-                    return TryBuyNextMachine(time, machineCounts, inventory);
+                    return TryBuyNextMachine(time, machineCounts, inventory, actions);
                 }
+
+                if (LogEnabled)
+                {
+                    actions.Add($"Resources at {time}: [{string.Join(",", inventory)}]");
+                }
+            }
+
+            if (LogEnabled)
+            {
+                LogDebug("-------------");
+                LogDebug($"End path with {inventory[GeodeIndex]} geodes");
+                LogDebug(string.Join("\n", actions));
             }
 
             return inventory[GeodeIndex];
         }
 
-        private IEnumerable<int> EnumerateAccessibleMachines(IReadOnlyList<int> machineCount)
+        private IEnumerable<int> EnumerateAccessibleMachines(IReadOnlyList<int> machineCount, int remainingTime)
         {
             for (int i = MachineCosts.Length - 1; i >= 0; i--)
             {
-                if (MachineCosts[i].WillBeAccessible(machineCount))
+                if (MachineCosts[i].WillBeAccessible(machineCount, remainingTime))
                 {
                     yield return i;
                 }
@@ -154,4 +192,12 @@ public class Day19 : Exercise
         // }
     }
 
+    public const bool LogEnabled = false;
+    public static void LogDebug(string text)
+    {
+        if (LogEnabled)
+        {
+            Debug.WriteLine(text);
+        }
+    }
 }
