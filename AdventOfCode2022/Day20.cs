@@ -2,22 +2,31 @@ namespace AdventOfCode2022;
 
 public class Day20 : Exercise
 {
+    private const long DecryptionKey = 811589153L;
+
     public long ExecutePart1(string[] lines)
     {
         return GetCoordinates(lines).Sum();
     }
 
-    public IReadOnlyList<int> GetCoordinates(string[] lines)
+    public IReadOnlyList<long> GetCoordinates(string[] lines)
     {
         var sequence = new NumberSequence(lines.Select(x => new Number(int.Parse(x))).ToList());
         sequence.UnMix();
         return sequence.FindNthElementsAfter0(new []{1000, 2000, 3000}).Select(x => x.Value).ToArray();
-
     }
 
     public long ExecutePart2(string[] lines)
     {
-        return -2;
+        return GetCoordinates_Part2(lines).Sum();
+    }
+
+    public IEnumerable<long> GetCoordinates_Part2(string[] lines)
+    {
+        var sequence = new NumberSequence(lines.Select(x => new Number(int.Parse(x))).ToList());
+        sequence.MultiplyNumbers(DecryptionKey);
+        sequence.UnMix(10);
+        return sequence.FindNthElementsAfter0(new []{1000, 2000, 3000}).Select(x => x.Value).ToArray();
     }
 
     public static NumberSequence ParseNumbers(string commaSeparatedNumbers)
@@ -38,9 +47,9 @@ public class Day20 : Exercise
         public void ShiftNumberAtIndex(int index)
         {
             var number = _numbers[index];
-            int offset = number.Value;
+            long offset = number.Value;
 
-            int newIndex = (index + offset);
+            long newIndex = (index + offset);
             var modulo = _numbers.Count - 1;
             if (newIndex >= 0)
             {
@@ -57,7 +66,7 @@ public class Day20 : Exercise
             }
             else
             {
-                _numbers.Insert(newIndex, number);
+                _numbers.Insert((int)newIndex, number);
             }
         }
 
@@ -66,13 +75,16 @@ public class Day20 : Exercise
             return string.Join(", ", _numbers);
         }
 
-        public void UnMix()
+        public void UnMix(int iterationCount = 1)
         {
             var order = new List<Number>(_numbers);
-            foreach (var number in order)
+            for (int i = 0; i < iterationCount; i++)
             {
-                var index = _numbers.IndexOf(number);
-                ShiftNumberAtIndex(index);
+                foreach (var number in order)
+                {
+                    var index = _numbers.IndexOf(number);
+                    ShiftNumberAtIndex(index);
+                }
             }
         }
 
@@ -88,14 +100,26 @@ public class Day20 : Exercise
             return indices.Select(i => _numbers[(zeroIndex + i) % _numbers.Count]);
         }
 
+        public void MultiplyNumbers(long factor)
+        {
+            foreach (var number in _numbers)
+            {
+                number.Multiply(factor);
+            }
+        }
     }
     public class Number
     {
-        public readonly int Value;
+        public long Value { get; private set; }
 
         public Number(int value)
         {
             Value = value;
+        }
+
+        public void Multiply(long factor)
+        {
+            Value *= factor;
         }
 
         public override string ToString()

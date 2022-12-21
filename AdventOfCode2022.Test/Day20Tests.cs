@@ -24,7 +24,7 @@ public class Day20Tests
     [Test]
     public void TestPart2()
     {
-        CollectionAssert.AreEqual(new[] {811589153L, 2434767459L, -1623178306L}, new Day20().GetCoordinates(_sampleLines));
+        CollectionAssert.AreEqual(new[] {811589153L, 2434767459L, -1623178306L}, new Day20().GetCoordinates_Part2(_sampleLines));
         Assert.AreEqual(1623178306L, new Day20().ExecutePart2(_sampleLines));
     }
 
