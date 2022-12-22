@@ -31,6 +31,6 @@ public class Day21Tests
     [Test]
     public void TestPart2()
     {
-        Assert.AreEqual(-20, new Day21().ExecutePart2(_sampleLines));
+        Assert.AreEqual(301, new Day21().ExecutePart2(_sampleLines));
     }
 }
