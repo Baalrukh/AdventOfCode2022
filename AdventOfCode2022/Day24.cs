@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using AdventOfCode2022.Utils;
 
 namespace AdventOfCode2022;
@@ -202,104 +203,63 @@ public class Day24 : Exercise
             return $"W{Width}, H{Height}, Entrance={Entrance}, Exit={Exit}";
         }
         
-        // public string 
-        public int GetMinPathLength()
+        private static IntVector2[] Offsets = new[]
         {
-            IntVector2[] offsets = new[]
-            {
-                new IntVector2(0, 0),
-                new IntVector2(1, 0),
-                new IntVector2(0, 1),
-                new IntVector2(-1, 0),
-                new IntVector2(0, -1)
-            };
+            new IntVector2(1, 0),
+            new IntVector2(0, 1),
+            new IntVector2(0, 0),
+            new IntVector2(-1, 0),
+            new IntVector2(0, -1)
+        };
 
-            int foundCount = 0;
-            int minFound = int.MaxValue;
+        public int GetMinPathLength(IntVector2 position, int time, HashSet<(IntVector2, int)> absoluteVisited)
+        {
+            if ((Exit - position).ManhattanDistance + time >= 350)
+            {
+                return int.MaxValue;
+            }
+
+            absoluteVisited.Add((position, time));
             
-            IntVector2 position = Entrance;
-            // PositionQueue queue = new PriorityQueue();
-            PositionQueue queue = new LinearQueue();
-            queue.Enqueue(new SearchState(position, 0), (Exit - position).ManhattanDistance);
-            while (!queue.IsEmpty)
+            int bestPathLength = int.MaxValue;
+            foreach (IntVector2 offset in Offsets)
             {
-                SearchState searchState = queue.Dequeue();
-                int nextTime = searchState.Time + 1;
-                ValleyWalkability valleyWalkability = BlizzardState.GetValleyWalkability(nextTime - 1);
-                foreach (IntVector2 offset in offsets)
+                var nextPosition = position + offset;
+                int nextTime = time + 1;
+                if (nextPosition == Exit)
                 {
-                    IntVector2 nextPosition = searchState.Position + offset;
-                    if (nextPosition == Exit)
-                    {
-                        Console.WriteLine(nextTime + 1);
-                        if (nextTime < minFound)
-                        {
-                            minFound = nextTime;
-                        }
-                        // foundCount++;
-                        // if (foundCount == 5000)
-                        // {
-                            return minFound;
-                        // }
-                    }
+                    return nextTime;
+                }
 
-                    if ((IsInsideValley(nextPosition) && valleyWalkability[nextPosition])
-                        || (nextPosition == Entrance))
+                if (absoluteVisited.Contains((nextPosition, nextTime)))
+                {
+                    continue;
+                }
+                
+                ValleyWalkability valleyWalkability = BlizzardState.GetValleyWalkability(time);
+                if ((IsInsideValley(nextPosition) && valleyWalkability[nextPosition])
+                 || (nextPosition == Entrance))
+                {
+                    int foundPathLength = GetMinPathLength(nextPosition, nextTime, absoluteVisited);
+                    if (foundPathLength < bestPathLength)
                     {
-                        queue.Enqueue(new SearchState(nextPosition, nextTime),
-                                       (Exit - nextPosition).ManhattanDistance);
+                        bestPathLength = foundPathLength;
                     }
                 }
             }
-            return minFound;
+
+            return bestPathLength;
+        }
+        
+        public int GetMinPathLength()
+        {
+            return GetMinPathLength(Entrance, 0, new HashSet<(IntVector2, int)>());
         }
 
         private bool IsInsideValley(IntVector2 position)
         {
             return ((position.X >= 0) && (position.X < Width)
                 && (position.Y >= 0) && (position.Y < Height));
-        }
-    }
-
-    private interface PositionQueue
-    {
-        void Enqueue(SearchState state, int priority);
-        SearchState Dequeue();
-        bool IsEmpty { get; }
-    }
-
-    private class PriorityQueue : PositionQueue
-    {
-        private PriorityQueue<SearchState, int> _queue = new();
-        public void Enqueue(SearchState state, int priority) => _queue.Enqueue(state, priority);
-        public SearchState Dequeue() => _queue.Dequeue();
-        public bool IsEmpty => _queue.Count == 0;
-    }
-    
-    private class LinearQueue : PositionQueue
-    {
-        private Queue<SearchState> _queue = new();
-        public void Enqueue(SearchState state, int priority)
-        {
-            if ((state.Position - new IntVector2(0, -1)).ManhattanDistance < state.Time * 10  + 10)
-            {
-                _queue.Enqueue(state);
-            }
-        }
-
-        public SearchState Dequeue() => _queue.Dequeue();
-        public bool IsEmpty => _queue.Count == 0;
-    }
-    
-    private struct SearchState
-    {
-        public IntVector2 Position;
-        public int Time;
-
-        public SearchState(IntVector2 position, int time)
-        {
-            Position = position;
-            Time = time;
         }
     }
     

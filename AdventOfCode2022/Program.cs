@@ -7,7 +7,8 @@ internal class Program
     public static void Main(string[] args)
     {
         var referenceType = typeof(Day01);
-        int currentDay = FindLastDay(referenceType);
+        // int currentDay = FindLastDay(referenceType);
+        int currentDay = 24;
 
         Console.WriteLine("Running Day" + currentDay);
             
