@@ -203,60 +203,17 @@ public class Day24 : Exercise
             return $"W{Width}, H{Height}, Entrance={Entrance}, Exit={Exit}";
         }
         
-        private static IntVector2[] Offsets = new[]
+        public int GetMinPathLength(IntVector2 start, IntVector2 end, int startTime)
         {
-            new IntVector2(1, 0),
-            new IntVector2(0, 1),
-            new IntVector2(0, 0),
-            new IntVector2(-1, 0),
-            new IntVector2(0, -1)
-        };
-
-        public int GetMinPathLength(IntVector2 position, int time, HashSet<(IntVector2, int)> absoluteVisited)
-        {
-            if ((Exit - position).ManhattanDistance + time >= 350)
+            if (startTime < 0)
             {
-                return int.MaxValue;
+                throw new ArgumentException();
             }
-
-            absoluteVisited.Add((position, time));
-            
-            int bestPathLength = int.MaxValue;
-            foreach (IntVector2 offset in Offsets)
-            {
-                var nextPosition = position + offset;
-                int nextTime = time + 1;
-                if (nextPosition == Exit)
-                {
-                    return nextTime;
-                }
-
-                if (absoluteVisited.Contains((nextPosition, nextTime)))
-                {
-                    continue;
-                }
-                
-                ValleyWalkability valleyWalkability = BlizzardState.GetValleyWalkability(time);
-                if ((IsInsideValley(nextPosition) && valleyWalkability[nextPosition])
-                 || (nextPosition == Entrance))
-                {
-                    int foundPathLength = GetMinPathLength(nextPosition, nextTime, absoluteVisited);
-                    if (foundPathLength < bestPathLength)
-                    {
-                        bestPathLength = foundPathLength;
-                    }
-                }
-            }
-
-            return bestPathLength;
-        }
-        
-        public int GetMinPathLength()
-        {
-            return GetMinPathLength(Entrance, 0, new HashSet<(IntVector2, int)>());
+            PathFinder pathFinder = new PathFinder(this, start, end, startTime + 350);
+            return pathFinder.GetMinPathLength(start, startTime);
         }
 
-        private bool IsInsideValley(IntVector2 position)
+        public bool IsInsideValley(IntVector2 position)
         {
             return ((position.X >= 0) && (position.X < Width)
                 && (position.Y >= 0) && (position.Y < Height));
@@ -266,12 +223,16 @@ public class Day24 : Exercise
     public long ExecutePart1(string[] lines)
     {
         Valley valley = ParseValley(lines);
-        return valley.GetMinPathLength();
+        return valley.GetMinPathLength(valley.Entrance, valley.Exit, 0);
     }
 
     public long ExecutePart2(string[] lines)
     {
-        return -2;
+        Valley valley = ParseValley(lines);
+        int first = valley.GetMinPathLength(valley.Entrance, valley.Exit, 0);
+        int second = valley.GetMinPathLength(valley.Exit, valley.Entrance, first + 1);
+        int end = valley.GetMinPathLength(valley.Entrance, valley.Exit, second + 1);
+        return end;
     }
 
     public static Valley ParseValley(string[] lines)
@@ -308,5 +269,81 @@ public class Day24 : Exercise
         }
 
         public bool this[IntVector2 position] => _walkability[position.Y * _width + position.X];
+    }
+    
+    
+    private class PathFinder
+    {
+        private Valley _valley;
+        private IntVector2 _start;
+        private IntVector2 _exit;
+        private HashSet<(IntVector2, int)> _absoluteVisited = new HashSet<(IntVector2, int)>();
+        private int _maxTime;
+        
+        public PathFinder(Valley valley, IntVector2 start, IntVector2 exit, int maxTime)
+        {
+            _exit = exit;
+            _maxTime = maxTime;
+            _start = start;
+            _valley = valley;
+        }
+
+        
+        private static IntVector2[] Offsets = new[]
+        {
+            new IntVector2(-1, 0),
+            new IntVector2(0, -1),
+            new IntVector2(0, 0),
+            new IntVector2(0, 1),
+            new IntVector2(1, 0),
+        };
+        // private static IntVector2[] Offsets = new[]
+        // {
+        //     new IntVector2(1, 0),
+        //     new IntVector2(0, 1),
+        //     new IntVector2(0, 0),
+        //     new IntVector2(-1, 0),
+        //     new IntVector2(0, -1)
+        // };
+        
+        public int GetMinPathLength(IntVector2 position, int time)
+        {
+            if ((_exit - position).ManhattanDistance + time >= _maxTime)
+            {
+                return int.MaxValue;
+            }
+
+            _absoluteVisited.Add((position, time));
+
+            int bestPathLength = int.MaxValue;
+            foreach (IntVector2 offset in Offsets)
+            {
+                var nextPosition = position + offset;
+                int nextTime = time + 1;
+                if (nextPosition == _exit)
+                {
+                    return nextTime;
+                }
+
+                if (_absoluteVisited.Contains((nextPosition, nextTime)))
+                {
+                    continue;
+                }
+
+                ValleyWalkability valleyWalkability = _valley.BlizzardState.GetValleyWalkability(time);
+                if ((_valley.IsInsideValley(nextPosition) && valleyWalkability[nextPosition])
+                 || (nextPosition == _start))
+                {
+                    int foundPathLength = GetMinPathLength(nextPosition, nextTime);
+                    if (foundPathLength < bestPathLength)
+                    {
+                        bestPathLength = foundPathLength;
+                    }
+                }
+            }
+
+            return bestPathLength;
+        }
+
     }
 }

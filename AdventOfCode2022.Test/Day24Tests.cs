@@ -35,7 +35,7 @@ public class Day24Tests
     [Test]
     public void TestPart2()
     {
-        Assert.AreEqual(-20, new Day24().ExecutePart2(_sampleLines));
+        Assert.AreEqual(54, new Day24().ExecutePart2(_sampleLines));
     }
 
     [Test]
