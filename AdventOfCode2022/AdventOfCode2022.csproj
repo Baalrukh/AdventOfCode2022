@@ -77,6 +77,14 @@
       <Content Include="Input\day23.txt">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </Content>
+      <Content Include="Input\day24.txt">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
     </ItemGroup>
 
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>AdventOfCode2022.Test</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
 </Project>
