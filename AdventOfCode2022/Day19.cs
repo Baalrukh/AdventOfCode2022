@@ -18,6 +18,8 @@ public class Day19 : Exercise
     // 1327 too low
     public long ExecutePart1(string[] lines)
     {
+        
+        // pas 1678, ni 1415
         var list = lines.Select(ParseBlueprint).Select(x => x.GetCollectedGeodeCount(24)).ToList();
         Console.WriteLine(string.Join("\n", list));
         return list.Select((x, i) => x * (i + 1)).Sum();
@@ -83,7 +85,9 @@ public class Day19 : Exercise
             machineCounts[OreIndex] = 1;
 
             List<string> actions = new();
-            return TryBuyNextMachine(time, machineCounts, inventory, actions);
+            int geodeCount = TryBuyNextMachine(time, machineCounts, inventory, actions);
+            Console.WriteLine($"{ID} -> Geodes {geodeCount}");
+            return geodeCount;
         }
 
         private int TryBuyNextMachine(int time, IReadOnlyList<int> machineCounts, IReadOnlyList<int> inventory, List<string> actions)
@@ -117,15 +121,17 @@ public class Day19 : Exercise
             Cost machineCost = MachineCosts[nextMachineToBuyIndex];
             while (time > 0)
             {
-                if (time == MachineCosts[GeodeIndex].Obsidian)
-                {
-                    if (inventory[ObsidianIndex] + machineCounts[ObsidianIndex] * time < MachineCosts[GeodeIndex].Obsidian)
-                    {
-                        LogDebug("Early break, won't have enough obsidian");
-                        return 0;
-                    }
-
-                }
+                // if (time == MachineCosts[GeodeIndex].Obsidian)
+                // {
+                //     if (inventory[ObsidianIndex] + machineCounts[ObsidianIndex] * time < MachineCosts[GeodeIndex].Obsidian)
+                //     {
+                //         LogDebug("Early break, won't have enough obsidian");
+                //         int totalGeode = inventory[ObsidianIndex] + machineCounts[ObsidianIndex] * time;
+                //         // Console.WriteLine("Early break, won't have enough obsidian => " + totalGeode);
+                //         return totalGeode;
+                //     }
+                //
+                // }
                 bool machineBought = machineCost.TrySpend(inventory);
                 ExtractResources(machineCounts, inventory);
 
@@ -192,7 +198,7 @@ public class Day19 : Exercise
         // }
     }
 
-    public const bool LogEnabled = false;
+    public static bool LogEnabled = false;
     public static void LogDebug(string text)
     {
         if (LogEnabled)
