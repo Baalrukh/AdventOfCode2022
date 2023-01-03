@@ -26,7 +26,7 @@ public class Day16Tests
     [Test]
     public void TestPart2()
     {
-        Assert.AreEqual(-20, new Day16().ExecutePart2(_sampleLines));
+        Assert.AreEqual(1707, new Day16().ExecutePart2(_sampleLines));
     }
 
     [Test]

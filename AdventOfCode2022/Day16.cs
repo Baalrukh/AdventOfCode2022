@@ -18,7 +18,7 @@ public class Day16 : Exercise
         Dictionary<Valve, bool> openValves = valves.ToDictionary(x => x, x => false);
         var firstValve = valvesDictionary["AA"];
         openValves[firstValve] = true;
-        var result = firstValve.FindBestFlow(valves, 30, 0, openValves);
+        var result = firstValve.FindBestFlow(valves, time, 0, openValves);
 
         return result.totalFlow;
     }
@@ -27,7 +27,21 @@ public class Day16 : Exercise
 
     public long ExecutePart2(string[] lines)
     {
-        return -2;
+        var valves = ParseAllValves(lines);
+        var valvesDictionary = valves.ToDictionary(x => x.Name, x => x);
+        foreach (var valve in valves)
+        {
+            valve.ComputeAllTravelTimes(valvesDictionary);
+        }
+
+        int time = 26;
+        Dictionary<Valve, bool> openValves = valves.ToDictionary(x => x, x => false);
+        var firstValve = valvesDictionary["AA"];
+        openValves[firstValve] = true;
+        Valve.ParallelContext context = new (time, valves, openValves);
+        var result = firstValve.FindBestFlowParallel(context, time, 0, 0);
+        
+        return result;
     }
 
     public static Valve[] ParseAllValves(string[] lines)
@@ -129,6 +143,69 @@ public class Day16 : Exercise
 
             bestPath.Add(this);
             return (bestFlow, bestPath);
+        }
+
+
+        public class ParallelContext
+        {
+            public List<Valve>[] VisitedValves = new List<Valve>[] { new List<Valve>(), new List<Valve>() };
+            public readonly int TotalTime;
+            public readonly Valve[] Valves;
+            public Dictionary<Valve, bool> OpenValves;
+
+            public ParallelContext(int totalTime, Valve[] valves, Dictionary<Valve, bool> openValves)
+            {
+                TotalTime = totalTime;
+                this.Valves = valves;
+                OpenValves = openValves;
+            }
+        }
+        
+        public int FindBestFlowParallel(ParallelContext context, int remainingTime, int currentFlow, int index)
+        {
+            if ((FlowRate != 0) && (remainingTime >= 1))
+            {
+                // open valve
+                remainingTime--;
+                currentFlow += remainingTime * FlowRate;
+            }
+
+            if (remainingTime == 0)
+            {
+                int otherFlow;
+                if (index == 0)
+                {
+                    otherFlow = FindBestFlowParallel(context, context.TotalTime, 0, 1);
+                } 
+                else
+                {
+                    otherFlow = 0;
+                }
+
+                return otherFlow + currentFlow;
+            }
+
+            var bestFlow = currentFlow;
+            foreach (var nextValve in context.Valves.Where(x => !context.OpenValves[x] && (x.FlowRate > 0)))
+            {
+                int nextRemainingTime = remainingTime - _travelTimes[nextValve.Name];
+                if (nextRemainingTime < 0)
+                {
+                    continue;
+                }
+
+                context.OpenValves[nextValve] = true;
+                var totalFlow = nextValve.FindBestFlowParallel(context, nextRemainingTime, currentFlow, index);
+                context.OpenValves[nextValve] = false;
+
+                if (totalFlow > bestFlow)
+                {
+                    bestFlow = totalFlow;
+                    context.VisitedValves[index].Add(this);
+                }
+            }
+
+            return bestFlow;
         }
 
     }
