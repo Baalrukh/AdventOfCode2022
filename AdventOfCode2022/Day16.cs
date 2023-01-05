@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using AdventOfCode2022.Utils;
 
 namespace AdventOfCode2022;
 
@@ -20,7 +21,10 @@ public class Day16 : Exercise
         openValves[firstValve] = true;
         var result = firstValve.FindBestFlow(valves, time, 0, openValves);
 
-        return result.totalFlow;
+        var result2 = FindBestFlowParallel(valves, openValves, new Actor[] {new Actor("Human", time, firstValve)}, 0);
+
+        // return result.totalFlow;
+        return result2.Flow;
     }
 
 
@@ -38,10 +42,10 @@ public class Day16 : Exercise
         Dictionary<Valve, bool> openValves = valves.ToDictionary(x => x, x => false);
         var firstValve = valvesDictionary["AA"];
         openValves[firstValve] = true;
-        Valve.ParallelContext context = new (time, valves, openValves);
-        var result = firstValve.FindBestFlowParallel(context, time, 0, 0);
-        
-        return result;
+
+        var result = FindBestFlowParallel(valves, openValves, new Actor[] {new Actor("Human", time, firstValve), new Actor("Elephant", time, firstValve)}, 0);
+
+        return result.Flow;
     }
 
     public static Valve[] ParseAllValves(string[] lines)
@@ -59,9 +63,79 @@ public class Day16 : Exercise
         return new Valve(name, flowRate, adjacentValves);
     }
 
+    public class Actor
+    {
+        public readonly string Name;
+        public int RemainingTime;
+        public Valve CurrentPosition;
+
+        public Actor(string name, int remainingTime, Valve currentPosition)
+        {
+            Name = name;
+            RemainingTime = remainingTime;
+            CurrentPosition = currentPosition;
+        }
+    }
+
+    public class PathResult
+    {
+        public int Flow;
+        public List<(int, Valve)>[] VisitedValvesByActor;
+
+        public PathResult(int flow)
+            : this(flow, new[] {new List<(int, Valve)>(), new List<(int, Valve)>()})
+        {
+        }
+
+        public PathResult(int flow, List<(int, Valve)>[] visitedValvesByActor)
+        {
+            Flow = flow;
+            VisitedValvesByActor = visitedValvesByActor;
+        }
+    }
+
+    public static PathResult FindBestFlowParallel(Valve[] valves, Dictionary<Valve, bool> openValves, Actor[] actors, int currentFlow)
+    {
+        var actorToMove = actors.MaxBy(x => x.RemainingTime);
+
+        var currentValve = actorToMove.CurrentPosition;
+
+        PathResult bestPathResult = new PathResult(currentFlow);
+
+        var remainingTime = actorToMove.RemainingTime;
+        foreach (var nextValve in valves.Where(x => !openValves[x] && (x.FlowRate > 0)))
+        {
+            int nextRemainingTime = remainingTime - currentValve.TravelTimes[nextValve.Name] - 1;
+            if (nextRemainingTime < 0)
+            {
+                continue;
+            }
+            int flow = currentFlow + nextValve.FlowRate * nextRemainingTime;
+
+            openValves[nextValve] = true;
+            actorToMove.CurrentPosition = nextValve;
+            actorToMove.RemainingTime = nextRemainingTime;
+            PathResult pathResult = FindBestFlowParallel(valves, openValves, actors, flow);
+            openValves[nextValve] = false;
+
+            if (pathResult.Flow > bestPathResult.Flow)
+            {
+                bestPathResult = pathResult;
+            }
+        }
+
+        var indexOf = actors.IndexOf(actorToMove);
+        actorToMove.RemainingTime = remainingTime;
+        actorToMove.CurrentPosition = currentValve;
+        bestPathResult.VisitedValvesByActor[indexOf].Add((26 - actorToMove.RemainingTime, currentValve));
+        return bestPathResult;
+    }
+
     public record Valve(string Name, int FlowRate, string[] AdjacentValveIndices)
     {
         private Dictionary<string, int> _travelTimes;
+
+        public Dictionary<string, int> TravelTimes => _travelTimes;
 
         public virtual bool Equals(Valve? other)
         {
@@ -144,69 +218,5 @@ public class Day16 : Exercise
             bestPath.Add(this);
             return (bestFlow, bestPath);
         }
-
-
-        public class ParallelContext
-        {
-            public List<Valve>[] VisitedValves = new List<Valve>[] { new List<Valve>(), new List<Valve>() };
-            public readonly int TotalTime;
-            public readonly Valve[] Valves;
-            public Dictionary<Valve, bool> OpenValves;
-
-            public ParallelContext(int totalTime, Valve[] valves, Dictionary<Valve, bool> openValves)
-            {
-                TotalTime = totalTime;
-                this.Valves = valves;
-                OpenValves = openValves;
-            }
-        }
-        
-        public int FindBestFlowParallel(ParallelContext context, int remainingTime, int currentFlow, int index)
-        {
-            if ((FlowRate != 0) && (remainingTime >= 1))
-            {
-                // open valve
-                remainingTime--;
-                currentFlow += remainingTime * FlowRate;
-            }
-
-            if (remainingTime == 0)
-            {
-                int otherFlow;
-                if (index == 0)
-                {
-                    otherFlow = FindBestFlowParallel(context, context.TotalTime, 0, 1);
-                } 
-                else
-                {
-                    otherFlow = 0;
-                }
-
-                return otherFlow + currentFlow;
-            }
-
-            var bestFlow = currentFlow;
-            foreach (var nextValve in context.Valves.Where(x => !context.OpenValves[x] && (x.FlowRate > 0)))
-            {
-                int nextRemainingTime = remainingTime - _travelTimes[nextValve.Name];
-                if (nextRemainingTime < 0)
-                {
-                    continue;
-                }
-
-                context.OpenValves[nextValve] = true;
-                var totalFlow = nextValve.FindBestFlowParallel(context, nextRemainingTime, currentFlow, index);
-                context.OpenValves[nextValve] = false;
-
-                if (totalFlow > bestFlow)
-                {
-                    bestFlow = totalFlow;
-                    context.VisitedValves[index].Add(this);
-                }
-            }
-
-            return bestFlow;
-        }
-
     }
 }
