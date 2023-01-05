@@ -19,7 +19,43 @@ public class Day17Tests
     [Test]
     public void TestPart2()
     {
-        Assert.AreEqual(-20, new Day17().ExecutePart2(_sampleLines));
+        Assert.AreEqual(1514285714288L, new Day17().ExecutePart2(_sampleLines));
+    }
+
+    [Test]
+    public void TestPart2_debug()
+    {
+        Assert.AreEqual(1514285714288L, new Day17().ExecutePart2_NotWorking(_sampleLines));
+    }
+
+    [Test]
+    public void Test1RockFall()
+    {
+        Day17.TetrisWorld world = new Day17.TetrisWorld(7);
+        var jetsEnumerator = new Day17.CountingLoopingEnumerator<char>(_sampleLines[0].ToList());
+
+        world.MakeBlockFall(Day17.PIECES[0], Day17.PIECES_SIZE[0], jetsEnumerator);
+        var map = world.PrintMap();
+        Assert.AreEqual("|..####.|\n", map);
+    }
+
+    [Test]
+    public void Test2RockFall()
+    {
+        Day17.TetrisWorld world = new Day17.TetrisWorld(7);
+        var jetsEnumerator = new LoopingEnumerator<char>(_sampleLines[0].ToList());
+
+        for (int i = 0; i < 2; i++)
+        {
+            world.MakeBlockFall(Day17.PIECES[i], Day17.PIECES_SIZE[i], jetsEnumerator);
+
+        }
+        var map = world.PrintMap();
+        Assert.AreEqual(
+@"|...#...|
+|..###..|
+|...#...|
+|..####.|\n".Replace("\r\n", "\n"), map);
     }
 
     [Test]
