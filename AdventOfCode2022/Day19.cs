@@ -65,11 +65,11 @@ public class Day19 : Exercise
             return false;
         }
 
-        public bool WillBeAccessible(IReadOnlyList<int> machineCounts, int remainingTime)
+        public bool WillBeAccessible(IReadOnlyList<int> machineCounts, IReadOnlyList<int> inventory, int remainingTime)
         {
-            return ((Ore == 0) || (machineCounts[OreIndex] * remainingTime >= Ore))
-                   && ((Clay == 0) || (machineCounts[ClayIndex] * remainingTime >= Clay))
-                   && ((Obsidian == 0) || (machineCounts[ObsidianIndex] * remainingTime >= Obsidian));
+            return ((Ore == 0) || (inventory[OreIndex] + machineCounts[OreIndex] * remainingTime >= Ore))
+                   && ((Clay == 0) || (inventory[ClayIndex] + machineCounts[ClayIndex] * remainingTime >= Clay))
+                   && ((Obsidian == 0) || (inventory[ObsidianIndex] + machineCounts[ObsidianIndex] * remainingTime >= Obsidian));
         }
     }
 
@@ -94,8 +94,14 @@ public class Day19 : Exercise
         {
             int maxGeodeCount = 0;
             bool first = true;
-            foreach (var nextMachineToBuyIndex in EnumerateAccessibleMachines(machineCounts, time))
+            
+            for (int nextMachineToBuyIndex = MachineCosts.Length - 1; nextMachineToBuyIndex >= 0; nextMachineToBuyIndex--)
             {
+                if (!MachineCosts[nextMachineToBuyIndex].WillBeAccessible(machineCounts, inventory, time))
+                {
+                    continue;
+                }
+                
                 if (!first)
                 {
                     LogDebug($"Backtrack to {time}");
@@ -111,6 +117,23 @@ public class Day19 : Exercise
                     maxGeodeCount = geodeCount;
                 }
             }
+            // foreach (var nextMachineToBuyIndex in EnumerateAccessibleMachines(machineCounts, inventory, time))
+            // {
+            //     if (!first)
+            //     {
+            //         LogDebug($"Backtrack to {time}");
+            //     }
+            //     first = false;
+            //     var currentInventory = new List<int>(inventory);
+            //     var currentMachineCounts = new List<int>(machineCounts);
+            //
+            //     int geodeCount =
+            //         GetCollectedGeodeCountWithNextMachine(nextMachineToBuyIndex, time, currentInventory, currentMachineCounts, new List<string>(actions));
+            //     if (maxGeodeCount < geodeCount)
+            //     {
+            //         maxGeodeCount = geodeCount;
+            //     }
+            // }
 
             return maxGeodeCount;
         }
@@ -165,11 +188,11 @@ public class Day19 : Exercise
             return inventory[GeodeIndex];
         }
 
-        private IEnumerable<int> EnumerateAccessibleMachines(IReadOnlyList<int> machineCount, int remainingTime)
+        private IEnumerable<int> EnumerateAccessibleMachines(IReadOnlyList<int> machineCount, IReadOnlyList<int> inventory, int remainingTime)
         {
             for (int i = MachineCosts.Length - 1; i >= 0; i--)
             {
-                if (MachineCosts[i].WillBeAccessible(machineCount, remainingTime))
+                if (MachineCosts[i].WillBeAccessible(machineCount, inventory, remainingTime))
                 {
                     yield return i;
                 }
