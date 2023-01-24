@@ -8,7 +8,9 @@ public class Day21 : Exercise
     public long ExecutePart1(string[] lines)
     {
         MonkeyRepository monkeyRepository = new MonkeyRepository(lines.Select(ParseMonkeyInstruction).ToDictionary(x => x.monkeyName, x => x.instruction));
-        return monkeyRepository.EvaluateValue(RootName);
+        var result = monkeyRepository.EvaluateValue(RootName);
+
+        return result;
     }
 
     private (string monkeyName, MonkeyInstruction instruction) ParseMonkeyInstruction(string line)
@@ -33,9 +35,7 @@ public class Day21 : Exercise
         MonkeyRepository monkeyRepository = new MonkeyRepository(lines.Select(ParseMonkeyInstruction).ToDictionary(x => x.monkeyName, x => x.instruction));
         monkeyRepository.PatchRepository();
 
-        monkeyRepository.Invert(HumanName);
-        
-        return monkeyRepository.EvaluateValue(HumanName);
+        return monkeyRepository.ReverseEvaluate(HumanName);
     }
 
     public class MonkeyRepository
@@ -47,13 +47,16 @@ public class Day21 : Exercise
             _monkeyInstructions = monkeyInstructions;
         }
 
-        public MonkeyInstruction this[string name] => _monkeyInstructions[name];
-
         public void PatchRepository()
         {
-            BinaryOperationInstruction root = (BinaryOperationInstruction)_monkeyInstructions[RootName];
-            _monkeyInstructions[RootName] = new EqualityInstruction(root.LeftMonkey, root.RightMonkey);
+            PatchRoot();
             _monkeyInstructions.Remove(HumanName);
+        }
+
+        public void PatchRoot()
+        {
+            BinaryOperationInstruction root = (BinaryOperationInstruction) _monkeyInstructions[RootName];
+            _monkeyInstructions[RootName] = new EqualityInstruction(root.LeftMonkey, root.RightMonkey);
         }
 
         public long EvaluateValue(string name)
@@ -61,28 +64,15 @@ public class Day21 : Exercise
             return _monkeyInstructions[name].Execute(this);
         }
 
-        public void Invert(string monkeyName)
+        public long ReverseEvaluate(string monkeyName)
         {
-            Dictionary<string, MonkeyInstruction> newInstructions = new Dictionary<string, MonkeyInstruction>();
-            while (monkeyName != string.Empty)
-            {
-                KeyValuePair<string, MonkeyInstruction> monkeyInstruction = _monkeyInstructions.FirstOrDefault(x => x.Value.Uses(monkeyName));
-                if (!default(KeyValuePair<string, MonkeyInstruction>).Equals(monkeyInstruction))
-                {
-                    newInstructions[monkeyName] = monkeyInstruction.Value.Invert(monkeyInstruction.Key, monkeyName);
-                    _monkeyInstructions.Remove(monkeyInstruction.Key);
-                    monkeyName = monkeyInstruction.Key;
-                }
-                else
-                {
-                    monkeyName = string.Empty;
-                }
-            }
+            KeyValuePair<string, MonkeyInstruction> monkeyInstruction = _monkeyInstructions.FirstOrDefault(x => x.Value.Uses(monkeyName));
+            var unknownName = monkeyInstruction.Key;
+            var instruction = monkeyInstruction.Value;
 
-            foreach (var pair in newInstructions)
-            {
-                _monkeyInstructions.Add(pair.Key, pair.Value);
-            }
+            var equalityValue = unknownName == RootName ? 0 : ReverseEvaluate(unknownName);
+
+            return instruction.ReverseEvaluate(equalityValue, this, monkeyName);
         }
     }
     
@@ -90,14 +80,14 @@ public class Day21 : Exercise
     {
         long Execute(MonkeyRepository monkeyRepository);
         bool Uses(string monkeyName);
-        MonkeyInstruction Invert(string currentName, string operandToInvert);
+        long ReverseEvaluate(long equalityValue, MonkeyRepository monkeyRepository, string operandToInvert);
     }
 
     public class ValueInstruction : MonkeyInstruction
     {
-        public readonly int Value;
+        public readonly long Value;
 
-        public ValueInstruction(int value)
+        public ValueInstruction(long value)
         {
             Value = value;
         }
@@ -112,7 +102,7 @@ public class Day21 : Exercise
             return false;
         }
 
-        public MonkeyInstruction Invert(string currentName, string operandToInvert)
+        public long ReverseEvaluate(long equalityValue, MonkeyRepository monkeyRepository, string operandToInvert)
         {
             throw new NotImplementedException();
         }
@@ -133,8 +123,9 @@ public class Day21 : Exercise
 
         public long Execute(MonkeyRepository monkeyRepository)
         {
-            return Operation(monkeyRepository.EvaluateValue(LeftMonkey),
-                monkeyRepository.EvaluateValue(RightMonkey));
+            var left = monkeyRepository.EvaluateValue(LeftMonkey);
+            var right = monkeyRepository.EvaluateValue(RightMonkey);
+            return Operation.Execute(left, right);
         }
 
         public bool Uses(string monkeyName)
@@ -142,23 +133,45 @@ public class Day21 : Exercise
             return (monkeyName == LeftMonkey) || (monkeyName == RightMonkey);
         }
 
-        public MonkeyInstruction Invert(string currentName, string operandToInvert)
+        public long ReverseEvaluate(long equalityValue, MonkeyRepository monkeyRepository, string operandToInvert)
         {
-            IntBinaryOperation oppositeIntOperation = _oppositeIntOperations[Operation];
-
             string otherName = operandToInvert == LeftMonkey ? RightMonkey : LeftMonkey;
-            
-            if ((Operation == AdditionOperation) || (Operation == MultiplyOperation))
+            var otherValue = monkeyRepository.EvaluateValue(otherName);
+
+            if (Operation == AdditionOperation)
             {
-                return new BinaryOperationInstruction(currentName, otherName, oppositeIntOperation);
-            }
-            
-            if (operandToInvert == LeftMonkey)
-            {
-                return new BinaryOperationInstruction(currentName, RightMonkey, oppositeIntOperation);
+                return equalityValue - otherValue;
             }
 
-            return new BinaryOperationInstruction(LeftMonkey, currentName, oppositeIntOperation);
+            if (Operation == SubstractOperation)
+            {
+                // eq = left - right
+                if (operandToInvert == LeftMonkey)
+                {
+                    return equalityValue + otherValue;
+                }
+
+                return otherValue - equalityValue;
+            }
+
+            if (Operation == MultiplyOperation)
+            {
+                // eq = left * right
+                return equalityValue / otherValue;
+            }
+
+            if (Operation == DivideOperation)
+            {
+                // eq = left / right
+                if (operandToInvert == LeftMonkey)
+                {
+                    return equalityValue * otherValue;
+                }
+
+                return otherValue / equalityValue;
+            }
+
+            throw new Exception();
         }
 
         public override string ToString()
@@ -180,7 +193,9 @@ public class Day21 : Exercise
 
         public long Execute(MonkeyRepository monkeyRepository)
         {
-            return monkeyRepository.EvaluateValue(LeftMonkey) == monkeyRepository.EvaluateValue(RightMonkey) ? 1 : 0;
+            var left = monkeyRepository.EvaluateValue(LeftMonkey);
+            var right = monkeyRepository.EvaluateValue(RightMonkey);
+            return left.CompareTo(right);
         }
 
         public bool Uses(string monkeyName)
@@ -188,53 +203,47 @@ public class Day21 : Exercise
             return (monkeyName == LeftMonkey) || (monkeyName == RightMonkey);
         }
 
-        public MonkeyInstruction Invert(string currentName, string operandToInvert)
+        public long ReverseEvaluate(long equalityValue, MonkeyRepository monkeyRepository, string operandToInvert)
         {
+            // left == right
             string otherName = operandToInvert == LeftMonkey ? RightMonkey : LeftMonkey;
-            return new ReferenceInstruction(otherName);
+            var otherValue = monkeyRepository.EvaluateValue(otherName);
+            return otherValue;
         }
     }
 
-
-    public class ReferenceInstruction : MonkeyInstruction
+    public interface IntBinaryOperation
     {
-        public readonly string MonkeyName;
+        long Execute(long left, long right);
+    }
 
-        public ReferenceInstruction(string monkeyName)
+    public class SingleResultBinaryOperation : IntBinaryOperation
+    {
+        private readonly Func<long, long, long> _operation;
+        public char Symbol { get; }
+
+        public SingleResultBinaryOperation(char symbol, Func<long, long, long> operation)
         {
-            MonkeyName = monkeyName;
+            _operation = operation;
+            Symbol = symbol;
         }
 
-        public long Execute(MonkeyRepository monkeyRepository)
+        public long Execute(long left, long right)
         {
-            return monkeyRepository.EvaluateValue(MonkeyName);
+            return _operation(left, right);
         }
 
-        public bool Uses(string monkeyName)
+        public override string ToString()
         {
-            throw new NotImplementedException();
-        }
-
-        public MonkeyInstruction Invert(string currentName, string operandToInvert)
-        {
-            throw new NotImplementedException();
+            return Symbol.ToString();
         }
     }
-    
-    public delegate long IntBinaryOperation(long left, long right);
 
-    public static readonly IntBinaryOperation AdditionOperation = (a, b) => a + b;
-    public static readonly IntBinaryOperation SubstractOperation = (a, b) => a - b;
-    public static readonly IntBinaryOperation MultiplyOperation = (a, b) => a * b;
-    public static readonly IntBinaryOperation DivideOperation = (a, b) =>
-    {
-        if (a % b != 0)
-        {
-            throw new Exception("TODO");
-        } 
-        return a / b;
-    };
-    
+    public static readonly IntBinaryOperation AdditionOperation = new SingleResultBinaryOperation('+', (a, b) => a + b);
+    public static readonly IntBinaryOperation SubstractOperation = new SingleResultBinaryOperation('-', (a, b) => a - b);
+    public static readonly IntBinaryOperation MultiplyOperation = new SingleResultBinaryOperation('*', (a, b) => a * b);
+    public static readonly IntBinaryOperation DivideOperation = new SingleResultBinaryOperation('/', (a, b) => a / b);
+
     private static readonly IReadOnlyDictionary<char, IntBinaryOperation> _intOperations = new Dictionary<char, IntBinaryOperation>()
     {
         {'+', AdditionOperation},
@@ -250,15 +259,4 @@ public class Day21 : Exercise
         { MultiplyOperation, '*' },
         { DivideOperation, '/' },
     };
-    
-    private static readonly IReadOnlyDictionary<IntBinaryOperation, IntBinaryOperation> _oppositeIntOperations = new Dictionary<IntBinaryOperation, IntBinaryOperation>()
-    {
-        {AdditionOperation, SubstractOperation},
-        {SubstractOperation, AdditionOperation},
-        {MultiplyOperation, DivideOperation},
-        {DivideOperation, MultiplyOperation},
-    };
-    
-    
-
 }
